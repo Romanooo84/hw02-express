@@ -8,8 +8,11 @@ const fs = require('fs').promises;
 router.get('/', async (req, res, next) => {
   try {
     const data = await fs.readFile('./contacts.json', 'utf8');
-    res.status(200).json(JSON.parse(data));
+    res
+    .status(200)
+    .json(JSON.parse(data));
   } catch (err) {
+    console.error(err);
     next(err);
   }
   })
@@ -20,11 +23,13 @@ router.get('/:contactId', async (req, res, next) => {
   data = contacts.find(user => user.id === contactId)
   console.log(data)
   if (!data) {
-    res.status(404)
-    res.json('Not found')
+    res
+    .status(404)
+    .json('Not found')
   }
-    res.status(200)
-    res.send(`id ${data.id} \n name: ${data.name} \n email: ${data.email} \n phone: ${data.phone}`)
+    res
+    .status(200)
+    .send(`id ${data.id} \n name: ${data.name} \n email: ${data.email} \n phone: ${data.phone}`)
 })
 
 router.post('/', async (req, res, next) => {
@@ -38,18 +43,28 @@ router.post('/', async (req, res, next) => {
 })
 
 router.delete('/:contactId', async (req, res, next) => {
-  const contactId = req.params.contactId;
-  foundItem = contacts.find(found => found.id === contactId)
-  data = contacts.filter(user => user.id !== contactId)
-  data = [...data]
-  if (foundItem) {
-     res.status(200)
-  res.json(`item dleted`)
-}
-  else {
-    res.status(404)
-    res.json("item not found")
+   const contactId = req.params.contactId;
+  try {
+    const data = await fs.readFile('./contacts.json', 'utf8');
+    const contactsData = JSON.parse(data)
+    const item = contactsData.find(find => find.id === contactId)
+    if (!item) {
+      res
+        .status(404)
+        .json("contact not found")
+      return
+    }
+    const updatedContacts = contactsData.filter(found => found.id !== contactId)
+    await fs.writeFile('./contacts.json', JSON.stringify(updatedContacts, null, 2), 'utf8');
+    console.log(updatedContacts)
+    res
+      .status(200)
+    .json(`contact id = ${contactId} was deleted`)
+  } catch (err) {
+    console.error(err);
+    next(err);
   }
+
 })
 
 router.put('/:contactId', async (req, res, next) => {
