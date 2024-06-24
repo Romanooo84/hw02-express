@@ -1,7 +1,20 @@
-const express = require('express')
+const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs').promises;
-const router = express.Router()
+const router = express.Router();
+const Joi = require('joi');
+
+const postSchema = Joi.object({
+  name: Joi.string().min(3).max(30).required(),
+  email: Joi.string().email().required(),
+  phone: Joi.string().pattern(/^[0-9]+$/, 'numbers').min(9).max(15).required()
+});
+
+const putSchema = Joi.object({
+  name: Joi.string().min(3).max(30),
+  email: Joi.string().email(),
+  phone: Joi.string().pattern(/^[0-9]+$/, 'numbers').min(9).max(15)
+});
 
 router.get('/', async (req, res, next) => {
   try {
@@ -36,14 +49,19 @@ router.get('/:contactId', async (req, res, next) => {
   }})
 
 
-router.post('/', async (req, res, next) => {
-  const { name, email, phone } =req.body
-  const user= {
-    "id": uuidv4(),
-          "name": name,
-          "email": email,
-          "phone": phone
-  }
+  router.post('/', async (req, res, next) => {
+    const { name, email, phone } = req.body
+    
+    const { error } = postSchema.validate({ name, email, phone });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+    const user= {
+      "id": uuidv4(),
+            "name": name,
+            "email": email,
+            "phone": phone
+    }
   try {
     const data = await fs.readFile('./contacts.json', 'utf8');
     const items = JSON.parse(data)
@@ -85,6 +103,10 @@ router.delete('/:contactId', async (req, res, next) => {
 router.put('/:contactId', async (req, res, next) => {
   const { contactId } = req.params
   const { name, email, phone } = req.body
+  const { error } = putSchema.validate({ name, email, phone });
+  if (error) {
+    return res.status(400).json({ error: error.details[0].message });
+  }
 
   try {
     const data = await fs.readFile('./contacts.json', 'utf8');
