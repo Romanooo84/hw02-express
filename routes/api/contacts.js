@@ -19,18 +19,24 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:contactId', async (req, res, next) => {
   const contactId = req.params.contactId;
+  try {
+    const data = await fs.readFile('./contacts.json', 'utf8');
+    const items = JSON.parse(data)
+    const item = items.find(user => user.id===contactId)
+    if (!item) {
+      res
+        .status(404)
+        .json('Not found')
+    } else {
+      res
+        .status(200)
+        .send(`id ${item.id} \n name: ${item.name} \n email: ${item.email} \n phone: ${item.phone}`)
+    }
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }})
 
-  data = contacts.find(user => user.id === contactId)
-  console.log(data)
-  if (!data) {
-    res
-    .status(404)
-    .json('Not found')
-  }
-    res
-    .status(200)
-    .send(`id ${data.id} \n name: ${data.name} \n email: ${data.email} \n phone: ${data.phone}`)
-})
 
 router.post('/', async (req, res, next) => {
   const { namee, email, phone } =req.body
